@@ -1,19 +1,16 @@
 package database
 
 import (
-	"context"
-	"database/sql"
 	"fmt"
-	"log"
 	"os"
-	"time"
 
+	"github.com/jackc/pgx/v5"
 	_ "github.com/jackc/pgx/v5/stdlib" // pgx driver
 	"github.com/joho/godotenv"
 )
 
 // DB is a global variable to access the database connection.
-var DB *sql.DB
+var DB *pgx.Conn
 
 // ConnectDB initializes a PostgreSQL database connection.
 func ConnectDB() {
@@ -28,32 +25,13 @@ func ConnectDB() {
 		os.Getenv("PG_SSL"),
 	)
 
-	// Open a database connection
-	db, err := sql.Open("pgx", dsn)
+	conn, err := pgx.Connect(Ctx, dsn)
 	if err != nil {
-		log.Fatalf("Error connecting to database: %v", err)
+		fmt.Fprintf(os.Stderr, "Unable to connect to database: %v\n", err)
+		os.Exit(1)
 	}
 
-	// Set connection pool settings
-	db.SetMaxOpenConns(25)
-	db.SetMaxIdleConns(25)
-	db.SetConnMaxLifetime(5 * time.Minute)
+	defer conn.Close(Ctx)
 
-	// Ping database to verify connection
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
-	if err := db.PingContext(ctx); err != nil {
-		log.Fatalf("Database ping failed: %v", err)
-	}
-
-	fmt.Println("✅ Connected to PostgreSQL successfully!")
-	DB = db
-}
-
-// CloseDB closes the database connection.
-func CloseDB() {
-	if DB != nil {
-		DB.Close()
-		fmt.Println("🔌 Database connection closed.")
-	}
+	DB = conn
 }
