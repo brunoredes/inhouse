@@ -4,6 +4,7 @@ import (
 	"ayaxos-inhouse/src/database"
 	"ayaxos-inhouse/src/inhouse"
 	"ayaxos-inhouse/src/token"
+	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -95,14 +96,11 @@ func FinishLobby(c *gin.Context) {
 
 	token.RevokeInhouseToken(inhouseID)
 
-	revokedToken, tokenError := token.GetRevokedToken(inhouseID)
-	if tokenError != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to get revoked token"})
-	}
-
 	// ✅ Step 1: Insert revoked token into PostgreSQL
-	_, err := database.DB.Exec(ctx, "INSERT INTO revoked_tokens (token) VALUES ($1::TEXT)", revokedToken)
+	_, err := database.DB.Exec(ctx, "INSERT INTO public.revoked_tokens (token) VALUES ($1)", inhouseID)
 	if err != nil {
+		fmt.Println("error: " + err.Error())
+
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to store revoked token"})
 		return
 	}
@@ -137,5 +135,5 @@ func FinishLobby(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "Lobby finished successfully"})
+	c.JSON(http.StatusOK, gin.H{"message": "Lobby finished successfully", "tabelas": ""})
 }
