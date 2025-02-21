@@ -1,6 +1,7 @@
 package database
 
 import (
+	"context"
 	"fmt"
 	"os"
 
@@ -25,13 +26,28 @@ func ConnectDB() {
 		os.Getenv("PG_SSL"),
 	)
 
-	conn, err := pgx.Connect(Ctx, dsn)
+	fmt.Println(dsn)
+
+	// Create a background context
+	ctx := context.Background()
+
+	// Connect to the database
+	conn, err := pgx.Connect(ctx, dsn)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Unable to connect to database: %v\n", err)
 		os.Exit(1)
 	}
 
-	defer conn.Close(Ctx)
-
+	// Assign connection to global DB variable
 	DB = conn
+
+	fmt.Println("✅ Connected to PostgreSQL successfully")
+}
+
+// CloseDB closes the database connection
+func CloseDB() {
+	if DB != nil {
+		DB.Close(context.Background())
+		fmt.Println("🛑 PostgreSQL connection closed")
+	}
 }
