@@ -1,53 +1,77 @@
 package token
 
 import (
+	"os"
 	"time"
 
-	"math/rand"
+	"ayaxos-inhouse/src/database"
 
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/oklog/ulid"
+	"github.com/joho/godotenv"
+	"github.com/oklog/ulid/v2"
+	"github.com/redis/go-redis/v9"
 )
 
-var jwtSecret = []byte("89202d3e6b0be05e67ae39ea6d5d3de5") // Change to a secure secret
+var _ = godotenv.Load()
+var jwtSecret = []byte(os.Getenv("JWT_SECRET")) // Change this!
 
 type InhouseClaims struct {
-	InhouseID string   `json:"inhouse_id"` // ULID instead of int
+	InhouseID string   `json:"inhouse_id"` // Now using ULID
 	Players   []string `json:"players"`
 	Status    string   `json:"status"`
 	jwt.RegisteredClaims
 }
 
 func GenerateInhouseToken(players []string, status string) (string, error) {
-	entropy := ulid.Monotonic(rand.New(rand.NewSource(time.Now().UnixNano())), 0)
-	inhouseID := ulid.MustNew(ulid.Timestamp(time.Now()), entropy).String()
+	// Generate a ULID
+	inhouseID := ulid.Make().String()
 
 	claims := InhouseClaims{
 		InhouseID: inhouseID,
 		Players:   players,
 		Status:    status,
 		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(1 * time.Hour)), // Token valid for 1 hours
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(90 * time.Minute)), // 1h30m
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 		},
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	return token.SignedString(jwtSecret)
+	tokenString, err := token.SignedString(jwtSecret)
+	if err != nil {
+		return "", err
+	}
+
+	// Store in Redis with TTL of 90 minutes
+	err = database.RedisClient.Set(database.Ctx, inhouseID, tokenString, 90*time.Minute).Err()
+	if err != nil {
+		return "", err
+	}
+
+	return tokenString, nil
 }
 
 func VerifyInhouseToken(tokenString string) (*InhouseClaims, error) {
+	// Parse token
 	token, err := jwt.ParseWithClaims(tokenString, &InhouseClaims{}, func(token *jwt.Token) (interface{}, error) {
 		return jwtSecret, nil
 	})
-
 	if err != nil {
 		return nil, err
 	}
 
-	if claims, ok := token.Claims.(*InhouseClaims); ok && token.Valid {
-		return claims, nil
+	claims, ok := token.Claims.(*InhouseClaims)
+	if !ok || !token.Valid {
+		return nil, jwt.ErrSignatureInvalid
 	}
 
-	return nil, jwt.ErrSignatureInvalid
+	// Check if token exists in Redis
+	_, err = database.RedisClient.Get(database.Ctx, claims.InhouseID).Result()
+	if err == redis.Nil {
+		return nil, jwt.ErrSignatureInvalid // Token expired
+	} else if err != nil {
+		return nil, err
+	}
+
+	return claims, nil
 }
