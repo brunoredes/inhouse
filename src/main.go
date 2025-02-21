@@ -33,6 +33,6 @@ func Init_Database() {
 	database.InitRedis() // Initialize Redis
 	database.ConnectDB() // Initialize PG connection
 
-	defer database.CloseDB()
+	// defer database.CloseDB()
 
 }
