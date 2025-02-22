@@ -1,9 +1,9 @@
 package handlers
 
 import (
-	"ayaxos-inhouse/src/database"
-	"ayaxos-inhouse/src/inhouse"
-	"ayaxos-inhouse/src/token"
+	"ayaxos-inhouse/config/database"
+	"ayaxos-inhouse/internal/inhouse"
+	"ayaxos-inhouse/internal/services/token"
 	"fmt"
 	"net/http"
 

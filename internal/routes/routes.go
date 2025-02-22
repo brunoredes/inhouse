@@ -1,7 +1,7 @@
 package routes
 
 import (
-	"ayaxos-inhouse/src/handlers"
+	"ayaxos-inhouse/internal/handlers"
 
 	"github.com/gin-gonic/gin"
 )

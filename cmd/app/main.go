@@ -1,8 +1,8 @@
 package main
 
 import (
-	"ayaxos-inhouse/src/database"
-	"ayaxos-inhouse/src/routes"
+	"ayaxos-inhouse/config/database"
+	"ayaxos-inhouse/internal/routes"
 	"fmt"
 	"os"
 	"os/signal"

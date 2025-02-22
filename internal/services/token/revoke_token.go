@@ -1,7 +1,7 @@
 package token
 
 import (
-	"ayaxos-inhouse/src/database"
+	"ayaxos-inhouse/config/database"
 	"time"
 )
 

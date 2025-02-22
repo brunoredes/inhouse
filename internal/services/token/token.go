@@ -4,7 +4,7 @@ import (
 	"os"
 	"time"
 
-	"ayaxos-inhouse/src/database"
+	"ayaxos-inhouse/config/database"
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/joho/godotenv"
@@ -16,7 +16,7 @@ var _ = godotenv.Load()
 var jwtSecret = []byte(os.Getenv("JWT_SECRET")) // Change this!
 
 type InhouseClaims struct {
-	InhouseID string   `json:"inhouse_id"` // Now using ULID
+	InhouseID string   `json:"inhouse_id"` // ULID
 	Players   []string `json:"players"`
 	Status    string   `json:"status"`
 	jwt.RegisteredClaims
